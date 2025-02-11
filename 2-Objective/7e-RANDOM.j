@@ -15,12 +15,47 @@
 
 //Set size array 10 to higher if u have more value             
 struct Randompool 
-    integer array value[10] //Use for raw or number or id item                                 
-    real array rate_default[10] //Constant rate default                                 
-    real array rate[10] // Rate now of item                                 
-    real array increase[10] //When drop call a time, rate = rate + increase                                 
+    integer array value[99] //Use for raw or number or id item                                 
+    real array rate_default[99] //Constant rate default                                 
+    real array rate[99] // Rate now of item                                 
+    real array increase[99] //When drop call a time, rate = rate + increase                                 
     integer times //When the drop call a time, it increase 1                                  
-    integer size = -1 
+    integer size = - 1 
+    method add_rare takes Randompool rp returns nothing 
+        call rp.new_value('I00F', 1, 0, 0)  //Amulet of Spell Shield
+        call rp.new_value('I00E', 1, 0, 0)  //Ancient Janggo of Endurance
+        call rp.new_value('I00K', 1, 0, 0)  //Legion Doom-Horn
+        call rp.new_value('I00J', 1, 0, 0)  //Scourge Bone Chimes
+        call rp.new_value('I00G', 1, 0, 0)  //Staff of Teleportation
+        call rp.new_value('I00H', 1, 0, 0)  //The Lion Horn of Stormwind
+        call rp.new_value('I00I', 1, 0, 0)  //Warsong Battle Drums
+    endmethod
+    method is_rare takes integer id returns boolean 
+        local Randompool pool_item_rare
+        local integer n = 0
+        local boolean b = false
+        set pool_item_rare = Randompool.create()
+        call .add_rare(pool_item_rare)
+        loop
+            exitwhen n > pool_item_rare.size
+            if id == pool_item_rare.value[n] then 
+                set b = true 
+                exitwhen true 
+            endif
+            set n = n + 1
+        endloop
+        call pool_item_rare.destroy()
+        return b
+    endmethod
+    method rare_drop takes nothing returns integer 
+        local Randompool pool_item_rare
+        local integer v = 0
+        set pool_item_rare = Randompool.create()
+        call pool_item_rare.add_rare(pool_item_rare)
+        set v = pool_item_rare.random()
+        call pool_item_rare.destroy()
+        return v
+    endmethod
     method new_value takes integer value, integer rate_default, integer rate, integer increase returns nothing 
         set.size =.size + 1 
         set.value[.size] = value 
@@ -47,7 +82,7 @@ struct Randompool
         return total 
     endmethod 
     method random takes nothing returns integer 
-        local integer v = -1 
+        local integer v = - 1 
         local real total = 0 
         local real random_val = 0 
         local real accumulated = 0 
@@ -67,6 +102,13 @@ struct Randompool
                 call.action(bj_int) // Make some stupid code                
                 call.update_rate() 
                 set.times =.times + 1 
+                if (ModuloInteger(.times, 25) == 0 and .times != 0 ) then 
+                    set v = .rare_drop()
+                    // set bj_lastCreatedItem = CreateItem(v, 0, 0)
+                    // call BJDebugMsg("times:" + I2S(.times) + " || index: " + I2S(-5) + " - " + GetItemName(bj_lastCreatedItem))
+                    // call RemoveItem(bj_lastCreatedItem)
+                    // call BJDebugMsg(I2S(v))
+                endif
                 exitwhen true 
             endif 
             set bj_int = bj_int + 1 
@@ -79,12 +121,11 @@ struct Randompool
     endmethod 
     method action takes integer index returns nothing 
         //Code for example                  
-        if.times == 5 then 
-            call BJDebugMsg("Critical DROP! 5 times") 
-
-        endif 
-        if index == 2 then 
-            call BJDebugMsg("Critical DROP! reset rate to default") 
+        if (ModuloInteger(.times, 25) == 0 and .times != 0 )  then 
+            set bj_lastCreatedItem = CreateItem(.value[index], 0, 0)
+            call BJDebugMsg("25 Times! Critical drop rare item ! [[" + GetItemName(bj_lastCreatedItem) + "]]") 
+            // call BJDebugMsg("times:" + I2S(.times) + " || index: " + I2S(index) + " - " + GetItemName(bj_lastCreatedItem))
+            call RemoveItem(bj_lastCreatedItem)
             //Reset when the value [9] drop                 
             set bj_int = 0 
             loop 
@@ -92,6 +133,16 @@ struct Randompool
                 set.rate[bj_int] =.rate_default[bj_int] 
                 set bj_int = bj_int + 1 
             endloop 
+        endif 
+        if .is_rare(.value[index]) and not (ModuloInteger(.times, 25) == 0 and .times != 0 )then 
+            // call BJDebugMsg("Critical DROP! reset rate to default") 
+            // call BJDebugMsg("Critical drop rare item !") 
+            set bj_lastCreatedItem = CreateItem(.value[index], 0, 0)
+
+            call BJDebugMsg("Critical drop rare item ! [[" + GetItemName(bj_lastCreatedItem) + "]]") 
+
+            // call BJDebugMsg("times:" + I2S(.times) + " || index: " + I2S(index) + " - " + GetItemName(bj_lastCreatedItem))
+            call RemoveItem(bj_lastCreatedItem)
         endif 
     endmethod 
 endstruct 

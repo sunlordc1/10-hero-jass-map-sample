@@ -1,13 +1,13 @@
 //Call struct then Unit instead UNIT        
 struct Unit 
     //=================Position================================           
-    method x takes unit u returns real 
+    static method x takes unit u returns real 
         return GetUnitX(u) 
     endmethod 
-    method y takes unit u returns real 
+    static method y takes unit u returns real 
         return GetUnitY(u) 
     endmethod 
-    method z takes unit u returns real 
+    static method z takes unit u returns real 
         return GetUnitFlyHeight(u) 
     endmethod 
     method setx takes unit u, real x returns nothing 

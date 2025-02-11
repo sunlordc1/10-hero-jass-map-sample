@@ -1,4 +1,16 @@
 struct EV_START_SPELL_EFFECT 
+    static method getReduceCD takes unit u returns real 
+        return 0.50//giam 50%
+    endmethod 
+
+    static method isExclude takes unit u returns boolean 
+        if Unit.haveabi(u, 'Z000') then //loai tru Z000
+            return true 
+        endif 
+        return false
+    endmethod 
+
+    static constant real MAX_GIAM_CD = 0.50//toi da giam 90%
     static method f_Checking takes nothing returns boolean 
         local unit caster = GetTriggerUnit() 
         local integer idc = GetUnitTypeId(caster) 
@@ -16,7 +28,16 @@ struct EV_START_SPELL_EFFECT
         local real yt = GetUnitY(target) //Position T of target unit                   
         local SKILL_MISSLE Missle 
         local integer n = 1 
-
+        local real timed = BlzGetAbilityCooldown(abicode, Unit.abilv(caster, abicode) - 1)
+        local real max_CD = .getReduceCD(caster)
+        if max_CD > MAX_GIAM_CD then
+            set max_CD = MAX_GIAM_CD
+        endif
+        if not isExclude(caster) then 
+            if(timed > 1.00) then
+                call BlzSetAbilityRealLevelField(GetSpellAbility() , ABILITY_RLF_COOLDOWN, Unit.abilv(caster, abicode) - 1, (timed * (1.00 - max_CD)     ))
+            endif
+        endif
         if abicode == 'A000' then 
             set n = 1 
             loop 
@@ -25,7 +46,7 @@ struct EV_START_SPELL_EFFECT
                 set Missle.caster = caster 
                 call Missle.setxyz(xc, yc, 100) 
                 //Angle       
-                set Missle.a = (Math.ab(xc, yc, targetX, targetY) -(3 * 20)) + (n * 20) 
+                set Missle.a = (Math.ab(xc, yc, targetX, targetY) - (3 * 20)) + (n * 20) 
                 //Speed per tick (1 second = speed *32)       
                 set Missle.missle_path = "Abilities\\Weapons\\FireBallMissile\\FireBallMissile.mdl" 
                 set Missle.missle_size = 1.5 

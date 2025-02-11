@@ -3,7 +3,8 @@
 struct GAME 
     static boolean IsSinglePlay = false 
     static integer CountPlayer = 0 
-
+    static Randompool pool_item
+    static Randompool pool_item_rare
     static Multiboard MB 
     private static method GameStart takes nothing returns nothing 
         local framehandle test1 = null 
@@ -32,8 +33,25 @@ struct GAME
         call SetMapFlag(MAP_LOCK_RESOURCE_TRADING, LOCK_RESOURCE_TRADING) 
         call SetMapFlag(MAP_SHARED_ADVANCED_CONTROL, SHARED_ADVANCED_CONTROL) 
         call EnableCreepSleepBJ(CREEP_SLEEP) 
+        set pool_item = Randompool.create()
+        //Normal Item
+        call.pool_item.new_value('I005', 40, 0, 0)  //Claws of Attack
+        call.pool_item.new_value('I008', 40, 0, 0)  //Cloak of Flames
+        call.pool_item.new_value('I00B', 40, 0, 0)  //Gauntlets of Ogre Strength
+        call.pool_item.new_value('I006', 40, 0, 0)  //Gloves of Haste
+        call.pool_item.new_value('I00C', 40, 0, 0)  //Mantle of Intelligence
+        call.pool_item.new_value('I00A', 40, 0, 0)  //Periapt of Vitality
+        call.pool_item.new_value('I007', 40, 0, 0)  //Ring of Protection
+        call.pool_item.new_value('I009', 40, 0, 0)  //Runed Bracers
+        call.pool_item.new_value('I00D', 40, 0, 0)  //Slippers of Agility
+        call.pool_item.new_value('IC61', 30, 0, 1)  //Tome of Health [300]
+        call.pool_item.new_value('I00L', 30, 0, 1)  //Tome of Level [2]
+        //Rare Item
+        call.pool_item.add_rare(.pool_item)
+  
 
- 
+
+   
 
         call DestroyTimer(GetExpiredTimer()) 
       

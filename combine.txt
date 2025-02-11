@@ -24,7 +24,7 @@ globals
     constant real P32 = 0.03125 // Explore this number; it truly has significance.         
     constant real P64 = 0.03125 * 2 // Explore this number; it truly has significance.       
     //Environment Dev      
-    constant boolean ENV_DEV = true // Are u on a testing mode ?        
+    constant boolean ENV_DEV = false // Are u on a testing mode ?        
 
     //Utils          
     constant string SYSTEM_CHAT = "[SYSTEM]: |cffffcc00" 
@@ -440,7 +440,7 @@ struct Proc
 endstruct 
 
 //--- Content from folder: ./1-Variables Library System Func/MyCustomCode.j ---
-//Don't edit my original code as it can be updated, add your code here
+
 
 //--- Content from folder: ./2-Objective/1a-PLAYER.j ---
 struct PLAYER 
@@ -1165,13 +1165,13 @@ endstruct
 //Call struct then Unit instead UNIT        
 struct Unit 
     //=================Position================================           
-    method x takes unit u returns real 
+    static method x takes unit u returns real 
         return GetUnitX(u) 
     endmethod 
-    method y takes unit u returns real 
+    static method y takes unit u returns real 
         return GetUnitY(u) 
     endmethod 
-    method z takes unit u returns real 
+    static method z takes unit u returns real 
         return GetUnitFlyHeight(u) 
     endmethod 
     method setx takes unit u, real x returns nothing 
@@ -1822,12 +1822,47 @@ endstruct
 
 //Set size array 10 to higher if u have more value             
 struct Randompool 
-    integer array value[10] //Use for raw or number or id item                                 
-    real array rate_default[10] //Constant rate default                                 
-    real array rate[10] // Rate now of item                                 
-    real array increase[10] //When drop call a time, rate = rate + increase                                 
+    integer array value[99] //Use for raw or number or id item                                 
+    real array rate_default[99] //Constant rate default                                 
+    real array rate[99] // Rate now of item                                 
+    real array increase[99] //When drop call a time, rate = rate + increase                                 
     integer times //When the drop call a time, it increase 1                                  
-    integer size = -1 
+    integer size = - 1 
+    method add_rare takes Randompool rp returns nothing 
+        call rp.new_value('I00F', 1, 0, 0)  //Amulet of Spell Shield
+        call rp.new_value('I00E', 1, 0, 0)  //Ancient Janggo of Endurance
+        call rp.new_value('I00K', 1, 0, 0)  //Legion Doom-Horn
+        call rp.new_value('I00J', 1, 0, 0)  //Scourge Bone Chimes
+        call rp.new_value('I00G', 1, 0, 0)  //Staff of Teleportation
+        call rp.new_value('I00H', 1, 0, 0)  //The Lion Horn of Stormwind
+        call rp.new_value('I00I', 1, 0, 0)  //Warsong Battle Drums
+    endmethod
+    method is_rare takes integer id returns boolean 
+        local Randompool pool_item_rare
+        local integer n = 0
+        local boolean b = false
+        set pool_item_rare = Randompool.create()
+        call .add_rare(pool_item_rare)
+        loop
+            exitwhen n > pool_item_rare.size
+            if id == pool_item_rare.value[n] then 
+                set b = true 
+                exitwhen true 
+            endif
+            set n = n + 1
+        endloop
+        call pool_item_rare.destroy()
+        return b
+    endmethod
+    method rare_drop takes nothing returns integer 
+        local Randompool pool_item_rare
+        local integer v = 0
+        set pool_item_rare = Randompool.create()
+        call pool_item_rare.add_rare(pool_item_rare)
+        set v = pool_item_rare.random()
+        call pool_item_rare.destroy()
+        return v
+    endmethod
     method new_value takes integer value, integer rate_default, integer rate, integer increase returns nothing 
         set.size =.size + 1 
         set.value[.size] = value 
@@ -1854,7 +1889,7 @@ struct Randompool
         return total 
     endmethod 
     method random takes nothing returns integer 
-        local integer v = -1 
+        local integer v = - 1 
         local real total = 0 
         local real random_val = 0 
         local real accumulated = 0 
@@ -1874,6 +1909,13 @@ struct Randompool
                 call.action(bj_int) // Make some stupid code                
                 call.update_rate() 
                 set.times =.times + 1 
+                if (ModuloInteger(.times, 25) == 0 and .times != 0 ) then 
+                    set v = .rare_drop()
+                    // set bj_lastCreatedItem = CreateItem(v, 0, 0)
+                    // call BJDebugMsg("times:" + I2S(.times) + " || index: " + I2S(-5) + " - " + GetItemName(bj_lastCreatedItem))
+                    // call RemoveItem(bj_lastCreatedItem)
+                    // call BJDebugMsg(I2S(v))
+                endif
                 exitwhen true 
             endif 
             set bj_int = bj_int + 1 
@@ -1886,12 +1928,11 @@ struct Randompool
     endmethod 
     method action takes integer index returns nothing 
         //Code for example                  
-        if.times == 5 then 
-            call BJDebugMsg("Critical DROP! 5 times") 
-
-        endif 
-        if index == 2 then 
-            call BJDebugMsg("Critical DROP! reset rate to default") 
+        if (ModuloInteger(.times, 25) == 0 and .times != 0 )  then 
+            set bj_lastCreatedItem = CreateItem(.value[index], 0, 0)
+            call BJDebugMsg("25 Times! Critical drop rare item ! [[" + GetItemName(bj_lastCreatedItem) + "]]") 
+            // call BJDebugMsg("times:" + I2S(.times) + " || index: " + I2S(index) + " - " + GetItemName(bj_lastCreatedItem))
+            call RemoveItem(bj_lastCreatedItem)
             //Reset when the value [9] drop                 
             set bj_int = 0 
             loop 
@@ -1899,6 +1940,16 @@ struct Randompool
                 set.rate[bj_int] =.rate_default[bj_int] 
                 set bj_int = bj_int + 1 
             endloop 
+        endif 
+        if .is_rare(.value[index]) and not (ModuloInteger(.times, 25) == 0 and .times != 0 )then 
+            // call BJDebugMsg("Critical DROP! reset rate to default") 
+            // call BJDebugMsg("Critical drop rare item !") 
+            set bj_lastCreatedItem = CreateItem(.value[index], 0, 0)
+
+            call BJDebugMsg("Critical drop rare item ! [[" + GetItemName(bj_lastCreatedItem) + "]]") 
+
+            // call BJDebugMsg("times:" + I2S(.times) + " || index: " + I2S(index) + " - " + GetItemName(bj_lastCreatedItem))
+            call RemoveItem(bj_lastCreatedItem)
         endif 
     endmethod 
 endstruct 
@@ -2328,7 +2379,8 @@ struct EV_UNIT_DEATH
         local integer kid = GetUnitTypeId(killer) 
         local integer pdid = Num.uid(dying) //Id player of dying    
         local integer pkid = Num.uid(killer) //Id player of killer    
-
+        local integer rd = 0
+        local integer n = 0
         //For EXAMPLE QUEST, comment it if not use   
         // if did == QUEST_EXAMPLE.archer_id then 
         //     call QUEST_EXAMPLE.kill_archer() 
@@ -2340,7 +2392,16 @@ struct EV_UNIT_DEATH
         // ROADLINE_EXAMPLE , comment it if not use   
         // call FlushChildHashtable(road, hdid) 
         // 
-    
+        if IsUnitType(dying, UNIT_TYPE_HERO) == true and pdid == 11 then 
+            // loop
+            //     exitwhen n > 20
+            set rd = GAME.pool_item.random()  
+            set bj_lastCreatedItem = CreateItem(rd, Unit.x(dying), Unit.y(dying))
+            // call BJDebugMsg(GetItemName(bj_lastCreatedItem))
+            // set n = n + 1
+            // endloop
+
+        endif
         set killer = null 
         set dying = null 
         return false 
@@ -2383,6 +2444,18 @@ endstruct
 
 //--- Content from folder: ./4-Event/5b - Unit - StartEffectSpell.j ---
 struct EV_START_SPELL_EFFECT 
+    static method getReduceCD takes unit u returns real 
+        return 0.50//giam 50%
+    endmethod 
+
+    static method isExclude takes unit u returns boolean 
+        if Unit.haveabi(u, 'Z000') then //loai tru Z000
+            return true 
+        endif 
+        return false
+    endmethod 
+
+    static constant real MAX_GIAM_CD = 0.50//toi da giam 90%
     static method f_Checking takes nothing returns boolean 
         local unit caster = GetTriggerUnit() 
         local integer idc = GetUnitTypeId(caster) 
@@ -2400,7 +2473,16 @@ struct EV_START_SPELL_EFFECT
         local real yt = GetUnitY(target) //Position T of target unit                   
         local SKILL_MISSLE Missle 
         local integer n = 1 
-
+        local real timed = BlzGetAbilityCooldown(abicode, Unit.abilv(caster, abicode) - 1)
+        local real max_CD = .getReduceCD(caster)
+        if max_CD > MAX_GIAM_CD then
+            set max_CD = MAX_GIAM_CD
+        endif
+        if not isExclude(caster) then 
+            if(timed > 1.00) then
+                call BlzSetAbilityRealLevelField(GetSpellAbility() , ABILITY_RLF_COOLDOWN, Unit.abilv(caster, abicode) - 1, (timed * (1.00 - max_CD)     ))
+            endif
+        endif
         if abicode == 'A000' then 
             set n = 1 
             loop 
@@ -2409,7 +2491,7 @@ struct EV_START_SPELL_EFFECT
                 set Missle.caster = caster 
                 call Missle.setxyz(xc, yc, 100) 
                 //Angle       
-                set Missle.a = (Math.ab(xc, yc, targetX, targetY) -(3 * 20)) + (n * 20) 
+                set Missle.a = (Math.ab(xc, yc, targetX, targetY) - (3 * 20)) + (n * 20) 
                 //Speed per tick (1 second = speed *32)       
                 set Missle.missle_path = "Abilities\\Weapons\\FireBallMissile\\FireBallMissile.mdl" 
                 set Missle.missle_size = 1.5 
@@ -2830,7 +2912,8 @@ endstruct
 struct GAME 
     static boolean IsSinglePlay = false 
     static integer CountPlayer = 0 
-
+    static Randompool pool_item
+    static Randompool pool_item_rare
     static Multiboard MB 
     private static method GameStart takes nothing returns nothing 
         local framehandle test1 = null 
@@ -2859,8 +2942,25 @@ struct GAME
         call SetMapFlag(MAP_LOCK_RESOURCE_TRADING, LOCK_RESOURCE_TRADING) 
         call SetMapFlag(MAP_SHARED_ADVANCED_CONTROL, SHARED_ADVANCED_CONTROL) 
         call EnableCreepSleepBJ(CREEP_SLEEP) 
+        set pool_item = Randompool.create()
+        //Normal Item
+        call.pool_item.new_value('I005', 40, 0, 0)  //Claws of Attack
+        call.pool_item.new_value('I008', 40, 0, 0)  //Cloak of Flames
+        call.pool_item.new_value('I00B', 40, 0, 0)  //Gauntlets of Ogre Strength
+        call.pool_item.new_value('I006', 40, 0, 0)  //Gloves of Haste
+        call.pool_item.new_value('I00C', 40, 0, 0)  //Mantle of Intelligence
+        call.pool_item.new_value('I00A', 40, 0, 0)  //Periapt of Vitality
+        call.pool_item.new_value('I007', 40, 0, 0)  //Ring of Protection
+        call.pool_item.new_value('I009', 40, 0, 0)  //Runed Bracers
+        call.pool_item.new_value('I00D', 40, 0, 0)  //Slippers of Agility
+        call.pool_item.new_value('IC61', 30, 0, 1)  //Tome of Health [300]
+        call.pool_item.new_value('I00L', 30, 0, 1)  //Tome of Level [2]
+        //Rare Item
+        call.pool_item.add_rare(.pool_item)
+  
 
- 
+
+   
 
         call DestroyTimer(GetExpiredTimer()) 
       

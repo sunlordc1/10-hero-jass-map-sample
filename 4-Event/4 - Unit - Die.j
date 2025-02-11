@@ -10,7 +10,8 @@ struct EV_UNIT_DEATH
         local integer kid = GetUnitTypeId(killer) 
         local integer pdid = Num.uid(dying) //Id player of dying    
         local integer pkid = Num.uid(killer) //Id player of killer    
-
+        local integer rd = 0
+        local integer n = 0
         //For EXAMPLE QUEST, comment it if not use   
         // if did == QUEST_EXAMPLE.archer_id then 
         //     call QUEST_EXAMPLE.kill_archer() 
@@ -22,7 +23,16 @@ struct EV_UNIT_DEATH
         // ROADLINE_EXAMPLE , comment it if not use   
         // call FlushChildHashtable(road, hdid) 
         // 
-    
+        if IsUnitType(dying, UNIT_TYPE_HERO) == true and pdid == 11 then 
+            // loop
+            //     exitwhen n > 20
+            set rd = GAME.pool_item.random()  
+            set bj_lastCreatedItem = CreateItem(rd, Unit.x(dying), Unit.y(dying))
+            // call BJDebugMsg(GetItemName(bj_lastCreatedItem))
+            // set n = n + 1
+            // endloop
+
+        endif
         set killer = null 
         set dying = null 
         return false 

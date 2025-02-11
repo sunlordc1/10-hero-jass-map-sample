@@ -23,7 +23,7 @@ globals
     constant real P32 = 0.03125 // Explore this number; it truly has significance.         
     constant real P64 = 0.03125 * 2 // Explore this number; it truly has significance.       
     //Environment Dev      
-    constant boolean ENV_DEV = true // Are u on a testing mode ?        
+    constant boolean ENV_DEV = false // Are u on a testing mode ?        
 
     //Utils          
     constant string SYSTEM_CHAT = "[SYSTEM]: |cffffcc00" 
