@@ -41,7 +41,7 @@ globals
     constant integer MAX_PLAYER = 24 
     constant integer MAX_SIZE_DIALOG_BUTTON = 24 
     constant boolean CREEP_SLEEP = false 
-    constant boolean LOCK_RESOURCE_TRADING = true 
+    constant boolean LOCK_RESOURCE_TRADING = false 
     constant boolean SHARED_ADVANCED_CONTROL = false 
     constant real GAME_PRELOAD_TIME = 0.01 
     constant real GAME_STATUS_TIME = 1.00 
@@ -3312,3 +3312,127 @@ endstruct
 // endstruct 
 
 
+    
+
+
+struct zoom
+
+    static method GetPID takes player p returns integer 
+        return GetPlayerId(p)
+    endmethod
+
+    static method IsPlayerOnline takes player p returns boolean
+        return GetPlayerSlotState(p) == PLAYER_SLOT_STATE_PLAYING and GetPlayerController(p) == MAP_CONTROL_USER
+    endmethod
+
+    static method endtime takes nothing returns nothing 
+        local timer t = GetExpiredTimer()
+        call PauseTimer(t)
+        call DestroyTimer(t)
+        set t = null
+    endmethod
+    
+    //đăng ký phím tắt debug.regKey(OSKEY_N,function thistype.f)
+    static method regKey takes oskeytype hotkey, code func returns nothing
+        local trigger t = CreateTrigger()
+        local integer i = 0
+        loop
+            exitwhen i == 10
+            call BlzTriggerRegisterPlayerKeyEvent(t, Player(i) , hotkey, 0, true)
+            set i = i + 1
+        endloop
+        call TriggerAddAction(t, func)
+        set t = null
+    endmethod
+    static method Elapsed takes real r, code Code returns nothing
+        // local trigger t = CreateTrigger()
+        // call TriggerRegisterTimerEvent(t, r, false)
+        // call TriggerAddAction( t, Code )
+        // set t = null
+        call TimerStart(CreateTimer() , r, false, Code)
+    endmethod
+    //thời gian lặp lại
+    static method Timer takes real r, code Code returns nothing
+        call TimerStart(CreateTimer() , r, true, Code)
+    endmethod
+
+    static method upzoom takes nothing returns nothing
+        local integer id = GetPID(GetTriggerPlayer())
+        set.zd[id] = .zd[id] + 500.
+        if.zd[id] >= 3500 then
+            set.zd[id] = 3500
+        endif
+        call SetCameraFieldForPlayer(Player(id) , CAMERA_FIELD_TARGET_DISTANCE, .zd[id] , 0.25)
+        if.zd[id] > 3500 then
+            call SetCameraFieldForPlayer(Player(id) , CAMERA_FIELD_FARZ, 8000.00, 0)
+        endif
+    endmethod
+    static method add takes integer id, integer num returns nothing
+        local real tmp = .zd[id] + num
+        call SetCameraFieldForPlayer(Player(id) , CAMERA_FIELD_TARGET_DISTANCE, tmp, 0.25)
+        if tmp > 3500 then
+            call SetCameraFieldForPlayer(Player(id) , CAMERA_FIELD_FARZ, 8000.00, 0)
+        endif
+    endmethod 
+    static method reset takes integer id returns nothing 
+        call SetCameraFieldForPlayer(Player(id) , CAMERA_FIELD_TARGET_DISTANCE, .zd[id] , 0.38)
+        if.zd[id] > 3500 then
+            call SetCameraFieldForPlayer(Player(id) , CAMERA_FIELD_FARZ, 8000.00, 0)
+        endif
+    endmethod 
+    static method subzoom takes nothing returns nothing
+        local integer id = GetPID(GetTriggerPlayer())
+        set.zd[id] = .zd[id] - 500.
+        if.zd[id] <= 500 then
+            set.zd[id] = 500.
+        endif
+        call SetCameraFieldForPlayer(Player(id) , CAMERA_FIELD_TARGET_DISTANCE, .zd[id] , 0.25)
+        if.zd[id] > 3500 then
+            call SetCameraFieldForPlayer(Player(id) , CAMERA_FIELD_FARZ, 8000.00, 0)
+        endif
+    endmethod
+    static real array zd
+    static method get_max takes real ind, boolean b returns real
+        if b == false then
+            if(ind >= 3500.) then
+                return 3500.
+            endif
+        else
+            if(ind >= 5500.) then
+                return 5500.
+            endif
+        endif
+        return ind
+    endmethod
+    //false tức là có chữ -cp là dc. còn true là bắt buộc chỉ -cp
+    static method chat takes nothing returns nothing
+        local real r = S2R(SubString(GetEventPlayerChatString() , 6, 10))
+        local integer id = GetPID(GetTriggerPlayer())
+        local boolean b = false
+        set.zd[id] = r
+        call SetCameraFieldForPlayer(Player(id) , CAMERA_FIELD_TARGET_DISTANCE, get_max(r, b) , 0.25)
+        if r > 3500 then
+            call SetCameraFieldForPlayer(Player(id) , CAMERA_FIELD_FARZ, 8000.00, 0)
+        endif
+    endmethod
+    static method func takes nothing returns nothing
+        local integer i = 0
+        local trigger t = CreateTrigger()
+        call.endtime()
+        loop
+            exitwhen i == 5
+            if IsPlayerOnline(Player(i)) then
+                call TriggerRegisterPlayerChatEvent(t, Player(i) , "-zoom", false)
+                set zd[i] = 1850.00
+                call SetCameraFieldForPlayer(Player(i) , CAMERA_FIELD_TARGET_DISTANCE, .zd[i] , 0.25)
+            endif
+            set i = i + 1
+        endloop
+        call.regKey(OSKEY_SUBTRACT, function thistype.subzoom)
+        call.regKey(OSKEY_ADD, function thistype.upzoom)
+        call TriggerAddAction(t, function thistype.chat)
+    endmethod
+    static method onInit takes nothing returns nothing
+        call.Elapsed(1., function thistype.func)
+    endmethod
+endstruct
